@@ -9,12 +9,12 @@
    Wrr is a vector of connections among the recurrent layer, containing postsynaptic cell indices, 
       sorted by the index of the presynaptic cell. The block of postsynaptic cell indices for each presynaptic
       cell is sorted as excitatory followed by inhibitory cells. I use fixed number of projections Kab to each population. 
-      For example, Wrr[j*(Kee+Kie)] to Wrr[j*{Kee+Kie)+Kee-1] are connections from j to E pop and 
-      Wrr[j*(Kee+Kie)+Kee] to Wrr[(j+1)*{Kee+Kie)-1] are connections from j to I pop. 
+      For example, Wrr[j*(Kee+Kie)] to Wrr[j*{Kee+Kie)+Kee-1] are connections from j to E pop and
+      Wrr[j*(Kee+Kie)+Kee] to Wrr[(j+1)*{Kee+Kie)-1] are connections from j to I pop.
    Wrf is a vector of connections from the feedforward layer to the recurrent layer, sorted by the index of the presynaptic cell.
       The block of postsynaptic cell indices for each presynaptic cell is sorted as excitatory followed by inhibitory cells.
    
-   param is a struc w/ fields: Ne, Ni, Nx, Jx, Jr, Kx, Kr, 
+   param is a struc w/ fields: Ne, Ni, Nx, Jx, Jr, Kx, Kr,
       gl, Cm, vlb, vth, DeltaT, vT, vl, vre, tref, tausyn, V0, T, dt,
       maxns, Irecord, Psyn
   Jx=[Jex; Jix]; Jr=[Jee, Jei; Jie, Jii];
@@ -87,7 +87,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 int Ntref[2],Ni,Ne,Nx,Kee,Kie,Kei,Kii,Kex,Kix,k,j,i,N,Nt,m1,m2,maxns,ns,Nrecord,jj,nskiprecord,tempflag,Nsx, Nw;
 double dt,*s,*v,*v0,*Isynrecord, *Psyn;
 double *Isyn, *Isynprime;
-int *Wrr, *Wrf, *Pr; 
+int *Wrr, *Wrf, *Pr;
 double *taudsyn,*taursyn,*vr,*sx,Jex,Jix,*iXspkInd;
 double Jee,Jei,Jie,Jii,T,*Irecord,*C,*Vleak,*DeltaT,*VT,*tref,*gl,*Vth,*Vre,*Vlb,xloc,yloc;
 int *refstate,iXspike,jspike,*postcellX,*postcellE,*postcellI,postcell, Nsyn, isyn, Nsyntype,Ke,Ki,Kx, *syntype; 
@@ -101,7 +101,7 @@ double  *temp1,*temp2,  Isyntot;
  * This is messy looking and is specific to mex.
  * Ignore if you're implementing this outside of mex.
  *******/
-sx = mxGetPr(prhs[0]);
+sx = mxGetPr(prhs[0]);    //the first input argument spike train
 m1 = mxGetM(prhs[0]);
 Nsx = mxGetN(prhs[0]);
 if(m1!=2){
@@ -226,8 +226,8 @@ Nsyntype=m1;
 taursyn=mxGetPr(mxTmp);
 
 mxTmp = mxGetField(prhs[3],0,"taudsyn");
-m1=mxGetN(mxTmp);
-m2=mxGetM(mxTmp);
+m1=mxGetN(mxTmp);   //column
+m2=mxGetM(mxTmp);   //row
 if(m2!=3)
     mexErrMsgTxt("size(taudsyn,1) should be 3");
 if(m1!=Nsyntype)
@@ -236,19 +236,21 @@ taudsyn=mxGetPr(mxTmp);
 
 mxTmp = mxGetField(prhs[3],0,"Psyn");
 Psyn=mxGetPr(mxTmp);
-m2=mxGetM(mxTmp);
-if(m2!=3)
-    mexErrMsgTxt("size(Psyn,1) should be 3");
 m1=mxGetN(mxTmp);
+m2=mxGetM(mxTmp);
 if(m1!=Nsyntype)
     mexErrMsgTxt("size(Psyn,2) should equal size(taursyn,2)");
+if(m2!=3)
+    mexErrMsgTxt("size(Psyn,1) should be 3");
 
 syntype=mxMalloc(m1*m2*sizeof(int));
 Nsyn = 0;
-for(isyn=0;isyn<m1*m2; isyn++){
-    if(Psyn[isyn]){   
+mexPrintf("%d, %d",m1, m2);
+for(isyn = 0; isyn < m1*m2; isyn++){
+    if(Psyn[isyn]){
         syntype[Nsyn]=isyn%3;
-        Nsyn++; }  /* type 0: X, 1:E, 2:I, for updating postsyn input type */ 
+        Nsyn++;     /* type 0: X, 1:E, 2:I, for updating postsyn input type */
+    }
 }
 
 mxTmp = mxGetField(prhs[3],0,"V0");
@@ -292,7 +294,7 @@ Nt=(int)(T/dt);
  *****/
 
 /* Allocate output vector */
-plhs[0] = mxCreateDoubleMatrix(2, maxns, mxREAL);
+plhs[0] = CreateDoubleMatrix(2, maxns, mxREAL);
 s=mxGetPr(plhs[0]);
 
 plhs[1] = mxCreateDoubleMatrix(Nrecord*Nsyn, Nt, mxREAL);
@@ -302,23 +304,25 @@ plhs[2] = mxCreateDoubleMatrix(Nrecord, Nt, mxREAL);
 vr=mxGetPr(plhs[2]);
 
 /* Allocate membrane potential */
-v = mxMalloc(N*sizeof(double));;
+v = mxMalloc(N*sizeof(double));   //N = 50000
 refstate=mxMalloc(N*sizeof(int));
 
-Isyn = mxMalloc(Nsyn*N*sizeof(double));  /* synp. currents, NxNsyn, Nsyn: nnz of Psyn, col i corresponds to syntype[i]   */ 
+Isyn = mxMalloc(Nsyn*N*sizeof(double));  /* synp. currents, NxNsyn, Nsyn: nnz of Psyn, col i corresponds to syntype[i] */
 Isynprime=mxMalloc(Nsyn*N*sizeof(double));
 
 temp1=mxMalloc(Nsyn*sizeof(double)); /* temporary constant */
 temp2=mxMalloc(Nsyn*sizeof(double)); 
+
 for (isyn=0;isyn<Nsyn;isyn++){
-     temp1[isyn]=(1/taudsyn[isyn]+1/taursyn[isyn]);
-     temp2[isyn]=1/(taudsyn[isyn]*taursyn[isyn]);}
+    temp1[isyn] = (1 / taudsyn[isyn] + 1 / taursyn[isyn]);
+    temp2[isyn] =  1 /(taudsyn[isyn] * taursyn[isyn]);
+}
 
 Kx=Kex+Kix;
 Ke=Kee+Kie;
 Ki=Kei+Kii;
 
-postcellX=mxMalloc(Kx*sizeof(int)); /* index for postsynaptic cells */ 
+postcellX=mxMalloc(Kx*sizeof(int)); /* index for postsynaptic cells */
 postcellE=mxMalloc(Ke*sizeof(int));
 postcellI=mxMalloc(Ki*sizeof(int));
 
@@ -329,11 +333,13 @@ postcellI=mxMalloc(Ki*sizeof(int));
 /* Inititalize variables */
 for(j=0;j<N;j++){
     v[j]=v0[j]; 
-    refstate[j]=0;}
+    refstate[j]=0;
+}
 
 for(jj=0;jj<Nsyn*N;jj++){
     Isyn[jj]=0;
-    Isynprime[jj]=0;}
+    Isynprime[jj]=0;
+}
 
 /* Record first time bin */
 for(jj=0;jj<Nrecord;jj++){
@@ -342,7 +348,8 @@ for(jj=0;jj<Nrecord;jj++){
     for(isyn=0;isyn<Nsyn;isyn++){
         Isynrecord[isyn+jj*Nrecord]=Isyn[(int)round(Irecord[jj]-1)*Nsyn+isyn];
     }
-  vr[jj]=v[(int)round(Irecord[jj]-1)]; }
+  vr[jj]=v[(int)round(Irecord[jj]-1)];
+}
 
 /* Refractory states */
 Ntref[0]=(int)round(tref[0]/dt);
@@ -352,31 +359,32 @@ Ntref[1]=(int)round(tref[1]/dt);
 /* mexPrintf("Jex=%.2f, Jix=%.2f\n Jee=%.2f, Jie=%.2f\n Jei=%.2f, Jii=%.2f\n", Jex,Jix,Jee,Jie,Jei,Jii); */
              
 /* Initialize number of spikes */
-ns=0;
+ns=0;   //# of spike
 
 /* Time loop */
 /* Exit loop and issue a warning if max number of spikes is exceeded */
 iXspike=0;
-iXspkInd=&sx[0]; /* even index: spk times. odd index: neuron ID */ 
-for(i=1;i<Nt && ns<maxns;i++){  
-    /* Update synaptic variables */ 
-    for(jj=0;jj<N*Nsyn;jj++){  
-          isyn=jj%Nsyn; 
-          Isyn[jj]+=Isynprime[jj]*dt;   
-          Isynprime[jj]-=dt*(Isynprime[jj]*temp1[isyn]+Isyn[jj]*temp2[isyn]);
-         
+iXspkInd=&sx[0]; /* even index: spk times. odd index: neuron ID */
+
+for(i=1; i < Nt && ns < maxns; i++){    //ns: # of spike
+    
+    /* Update synaptic variables */
+    for(jj=0;jj<N*Nsyn;jj++){   //N = 50000, Nsyn = # of syn type
+          isyn = jj % Nsyn;   //isyn: the ith
+          Isyn[jj] += Isynprime[jj] * dt;
+          Isynprime[jj] -= dt*(Isynprime[jj]*temp1[isyn]+Isyn[jj]*temp2[isyn]);
      }
     
-     /* Find all spikes in feedforwar layer at this time bin */
+     /* Find all spikes in feedforward layer at this time bin */
      /* Add to corresponding elements of JnextX */
-     while(*iXspkInd<=i*dt && iXspike<Nsx){
+     while(*iXspkInd <= i*dt && iXspike < Nsx){
          iXspkInd++; /* point to neuron ID */
          jspike=(int)round((*iXspkInd)-1);
-         if(jspike<0 || jspike>=Nx){
+         if(jspike < 0 || jspike >= Nx){
              mexPrintf("\n %d %d %d %d %d\n",(int)round(*(iXspkInd-1)/dt),iXspike,i,jspike,(int)round((*iXspkInd)-1));
              mexErrMsgTxt("Out of bounds index in sx.");
          }
-         Pr=&Wrf[jspike*Kx]; 
+         Pr = &Wrf[jspike*Kx];
          /*
          for(k=0;k<Kx;k++){ 
              postcell=(int)((*Pr)-1);
@@ -396,7 +404,7 @@ for(i=1;i<Nt && ns<maxns;i++){
              Pr++;
          } */
          
-         for(k=0;k<Kx;k++){ 
+         for(k=0;k<Kx;k++){
              postcellX[k]=(int)((*Pr)-1);
              if(postcellX[k]<0 || postcellX[k]>=N){
                  mexPrintf("\n Wrf j=%d, postcell=%d\n",j, postcellX[k]);
@@ -409,9 +417,10 @@ for(i=1;i<Nt && ns<maxns;i++){
              if(syntype[isyn]==0){
                  for(k=0;k<Kx;k++){
                      if (postcellX[k]<Ne)
-                         Isynprime[postcellX[k]*Nsyn+isyn]+=Jex*temp2[isyn];
+                         Isynprime[postcellX[k] * Nsyn + isyn] += Jex * temp2[isyn];        // Jx: Connection strengths
                      else
-                         Isynprime[postcellX[k]*Nsyn+isyn]+=Jix*temp2[isyn];}
+                         Isynprime[postcellX[k] * Nsyn + isyn] += Jix * temp2[isyn];
+                 }
              }
          }
          
@@ -425,7 +434,7 @@ for(i=1;i<Nt && ns<maxns;i++){
     
     /* loop over neurons  */ 
     Pr=&Wrr[0];
-    for(j=0;j<N;j++){      
+    for(j=0;j<N;j++){    
       /* Update membrane potential */
       /* Spikes will be propagated at the END of the time bin (see below)*/
         
@@ -433,11 +442,15 @@ for(i=1;i<Nt && ns<maxns;i++){
 
              if(refstate[j]<=0){
                 Isyntot=0;
+                
                 for(isyn=0;isyn<Nsyn;isyn++){
-                Isyntot+=Psyn[isyn]*Isyn[j*Nsyn+isyn];
-                }
-                v[j]+=fmax((Isyntot-gl[0]*(v[j]-Vleak[0])+gl[0]*DeltaT[0]*EXP((v[j]-VT[0])/DeltaT[0]))*dt/C[0],Vlb[0]-v[j]);}
-             else{                 
+                    Isyntot += Psyn[isyn] * Isyn[j*Nsyn+isyn];     //Isyn: size: N*Nsyn
+                }                         //the j th syn, include fast and slow
+                
+                v[j]+=fmax((Isyntot - gl[0]*(v[j]-Vleak[0]) + gl[0] * DeltaT[0] * EXP((v[j]-VT[0])/DeltaT[0])) * dt/C[0], Vlb[0]-v[j]);
+             }
+             
+             else{
                 if(refstate[j]>1)
                    v[j]=Vth[0];
                 else
@@ -478,7 +491,8 @@ for(i=1;i<Nt && ns<maxns;i++){
                       postcellE[k]=(int)(*Pr)-1;
                       if(postcellE[k]<0 || postcellE[k]>=N){
                          mexPrintf("\n exc j=%d, postcell=%d\n",j, postcellE[k]);
-                         mexErrMsgTxt("postcell out of bounds");}
+                         mexErrMsgTxt("postcell out of bounds");
+                      }
                       Pr++;
                   }
                   for(isyn=0;isyn<Nsyn;isyn++){
@@ -487,13 +501,15 @@ for(i=1;i<Nt && ns<maxns;i++){
                               if (postcellE[k]<Ne)
                                   Isynprime[postcellE[k]*Nsyn+isyn]+=Jee*temp2[isyn]; 
                               else
-                                  Isynprime[postcellE[k]*Nsyn+isyn]+=Jie*temp2[isyn];}
+                                  Isynprime[postcellE[k]*Nsyn+isyn]+=Jie*temp2[isyn];
+                          }
                       }
                   }
                   
               }
               else{
-                  Pr=Pr+Ke; }
+                  Pr=Pr+Ke; 
+              }
         }
           
        else{ /* If cell is inhibitory */
@@ -503,7 +519,8 @@ for(i=1;i<Nt && ns<maxns;i++){
                 for(isyn=0;isyn<Nsyn;isyn++){
                 Isyntot+=Psyn[isyn]*Isyn[j*Nsyn+isyn];
                 }
-             v[j]+=fmax((Isyntot-gl[1]*(v[j]-Vleak[1])+gl[1]*DeltaT[1]*EXP((v[j]-VT[1])/DeltaT[1]))*dt/C[1],Vlb[1]-v[j]);}
+                v[j]+=fmax((Isyntot-gl[1]*(v[j]-Vleak[1])+gl[1]*DeltaT[1]*EXP((v[j]-VT[1])/DeltaT[1]))*dt/C[1],Vlb[1]-v[j]);
+             }
              else{                 
                 if(refstate[j]>1)
                    v[j]=Vth[1];

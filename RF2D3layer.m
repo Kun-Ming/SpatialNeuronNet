@@ -60,12 +60,12 @@ if ~isfield(option, 'Layer1only') option.Layer1only=0; end
 
 if option.save==1 
     if ~ismember('filename',ParamChange(:,1))
-        error('No filename to save data') 
+        error('No filename to save data')
     end 
 end
 if option.CompCorr==1 
     if ~ismember('Nc',ParamChange(:,1))
-        error('No Nc (1x2): # of neurons to sample to compute correlations') 
+        error('No Nc (1x2): # of neurons to sample to compute correlations')
     end  
 end
 if option.loadS1==1 
@@ -125,15 +125,15 @@ param(2).sigmaRX=.1*ones(2,1);
 param(2).sigmaRR=.2*ones(2,2);
 
 % number of neurons to record synaptic inputs and voltages from
-nrecordE0=zeros(1,2); 
+nrecordE0=zeros(1,2);
 nrecordI0=zeros(1,2);
 
-% Synaptic time constants 
+% Synaptic time constants
 param(2).taudsyn=[5 100; 5, 100; 8, 100]; % rows: X, E, I, column for different syn types
 param(2).taursyn=[1 2; 1, 2; 1, 2]; % rows: X, E, I 
 param(2).Psyn=[.2 .8; 1, 0; 1, 0]; % percentage of diff syn currents
 
-param(1).taudsyn=[5; 5; 8]; % rows: X, E, I 
+param(1).taudsyn=[5; 5; 8]; % rows: X, E, I
 param(1).taursyn=[1; 1; 1]; 
 param(1).Psyn=[1; 1; 1];
 
@@ -189,8 +189,8 @@ for par=1:2
     
     param(par).V0=(V0max-V0min).*rand(param(par).N,1)+V0min;
 %     param(par).V0=data.param(par).V0;
-    param(par).Kr=ceil(param(par).Prr.*[param(par).Ne, param(par).Ne; param(par).Ni,param(par).Ni]);
-    param(par).Kx=ceil(param(par).Prx.*[param(par).Ne; param(par).Ni]);
+    param(par).Kr = ceil(param(par).Prr.*[param(par).Ne, param(par).Ne; param(par).Ni,param(par).Ni]);
+    param(par).Kx = ceil(param(par).Prx.*[param(par).Ne; param(par).Ni]);
     
     param(par).Irecord=[randi(param(par).Ne,1,nrecordE0(par)), (randi(param(par).Ni,1,nrecordI0(par))+param(par).Ne)];% neuron indice to record synaptic currents and Vm 
     param(par).Jr=param(par).Jr/sqrt(param(par).N);
