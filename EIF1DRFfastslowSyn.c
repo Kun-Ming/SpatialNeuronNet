@@ -447,7 +447,7 @@ for(i=1; i < Nt && ns < maxns; i++){    //ns: # of spike
                     Isyntot += Psyn[isyn] * Isyn[j*Nsyn+isyn];     //Isyn: size: N*Nsyn
                 }                         //the j th syn, include fast and slow
                 
-                v[j]+=fmax((Isyntot - gl[0]*(v[j]-Vleak[0]) + gl[0] * DeltaT[0] * EXP((v[j]-VT[0])/DeltaT[0])) * dt/C[0], Vlb[0]-v[j]);
+                v[j] += fmax((Isyntot - gl[0]*(v[j]-Vleak[0]) + gl[0] * DeltaT[0] * EXP((v[j]-VT[0])/DeltaT[0])) * dt/C[0], Vlb[0]-v[j]);
              }
              
              else{

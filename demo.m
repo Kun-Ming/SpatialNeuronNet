@@ -48,7 +48,7 @@ RF2D3layer(opt, ParamChange)
 %%%%%% plot correlation vs distance %%%%%%%%%%%%%
 load(filename,'C','daxis')
 figure
-plot(daxis,C,'linewidth',1) 
+plot(daxis,C,'linewidth',1)
 hold on
 colororder=lines(3); 
 text(.7, 0.9,'Corr (E2-E2)','unit','n','Horiz','l','color',colororder(1,:))
